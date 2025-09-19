@@ -19,8 +19,13 @@ from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import check_random_state
 from sklearn.utils.validation import check_is_fitted
+from tabpfn_common_utils.telemetry import set_extension
 
-from tabpfn_extensions.utils import infer_categorical_features, infer_device_and_type
+from tabpfn_extensions.utils import (
+    DeviceSpecification,
+    infer_categorical_features,
+    infer_device,
+)
 
 
 class TaskType(str, Enum):
@@ -98,7 +103,7 @@ class AutoTabPFNBase(BaseEstimator):
         max_time: int | None = 3600,
         eval_metric: str | None = None,
         presets: list[str] | str | None = None,
-        device: Literal["cpu", "cuda", "auto"] = "auto",
+        device: DeviceSpecification = "auto",
         random_state: int | None | np.random.RandomState = None,
         phe_init_args: dict | None = None,
         phe_fit_args: dict | None = None,
@@ -153,7 +158,7 @@ class AutoTabPFNBase(BaseEstimator):
         DataFrame, using the provided `feature_names` or generating default names.
         Finally, it resolves the categorical feature indices to be used.
         """
-        self.device_ = infer_device_and_type(self.device)
+        self.device_ = infer_device(self.device)
         if self.n_ensemble_models < 1:
             raise ValueError(
                 f"n_ensemble_models must be >= 1, got {self.n_ensemble_models}",
@@ -274,6 +279,7 @@ class AutoTabPFNBase(BaseEstimator):
         return {"allow_nan": True, "non_deterministic": True}
 
 
+@set_extension("post_hoc_ensembles")
 class AutoTabPFNClassifier(ClassifierMixin, AutoTabPFNBase):
     """An AutoGluon-powered scikit-learn wrapper for ensembling TabPFN classifiers.
 
@@ -427,6 +433,7 @@ class AutoTabPFNClassifier(ClassifierMixin, AutoTabPFNBase):
         return {"balance_probabilities": self.balance_probabilities}
 
 
+@set_extension("post_hoc_ensembles")
 class AutoTabPFNRegressor(RegressorMixin, AutoTabPFNBase):
     """An AutoGluon-powered scikit-learn wrapper for ensembling TabPFN regressors.
 
